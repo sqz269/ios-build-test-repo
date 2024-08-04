@@ -11,7 +11,7 @@ if [ -z "$APPLE_DEVELOPER_TEAM_ID" ]; then
 fi
 
 # Identify the P12 Cert name from the keychain
-P12_CERTIFICATE_NAME=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1)
+P12_CERTIFICATE_NAME=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | sed 's/"//g')
 echo "P12_CERTIFICATE_NAME: $P12_CERTIFICATE_NAME"
 
 # Identify the Provisioning Profile UUID
