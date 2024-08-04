@@ -76,11 +76,16 @@ echo "Exporting IPA..."
 xcodebuild \
     -exportArchive \
     -archivePath $PWD/build/Runner.xcarchive \
-    -exportPath $PWD/build/Runner.ipa \
+    -exportPath $PWD/build/IPA \
     -exportOptionsPlist ExportOptions.plist
 
 echo "iOS app signed successfully!"
 
+# find the ipa file name created
+IPA_FILE_NAME=$(ls $PWD/build/IPA/*.ipa)
+echo "IPA_FILE_NAME: $IPA_FILE_NAME"
+
 # echo "Upoloading the IPA to App Store Connect..."
-# # Upload IPA to App Store Connect
-# xcrun altool --upload-app -f $PWD/build/Runner.ipa -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
+# upload IPA to App Store Connect
+xcrun altool --upload-app -f $PWD/build/IPA/$IPA_FILE_NAME -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
+
