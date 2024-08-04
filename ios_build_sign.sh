@@ -81,6 +81,6 @@ xcodebuild \
 
 echo "iOS app signed successfully!"
 
-echo "Upoloading the IPA to App Store Connect..."
-# Upload IPA to App Store Connect
-xcrun altool --upload-app -f $PWD/build/Runner.ipa -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
+# echo "Upoloading the IPA to App Store Connect..."
+# # Upload IPA to App Store Connect
+# xcrun altool --upload-app -f $PWD/build/Runner.ipa -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
