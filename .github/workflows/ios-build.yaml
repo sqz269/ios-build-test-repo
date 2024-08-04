@@ -67,10 +67,12 @@ jobs:
         run: |
           flutter build ios --release --no-codesign
 
-      - name: Setup upterm session
-        uses: lhotari/action-upterm@v1
+      # - name: Setup upterm session
+      #   uses: lhotari/action-upterm@v1
 
       - name: Build and Export IPA
+        env:
+          APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
         run: |
           chmod +x ios_build_sign.sh
           ./ios_build_sign.sh
