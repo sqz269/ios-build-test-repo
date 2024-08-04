@@ -1,4 +1,4 @@
-name: Clean macOS Runner
+name: Build and Export IPA
 
 on:
   workflow_dispatch:
