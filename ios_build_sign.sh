@@ -87,5 +87,5 @@ echo "IPA_FILE_NAME: $IPA_FILE_NAME"
 
 # echo "Upoloading the IPA to App Store Connect..."
 # upload IPA to App Store Connect
-xcrun altool --upload-app -f $PWD/build/IPA/$IPA_FILE_NAME -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
+xcrun altool --upload-app -f $IPA_FILE_NAME -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
 
