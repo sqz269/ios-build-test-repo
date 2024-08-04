@@ -1,0 +1,106 @@
+name: Clean macOS Runner
+
+on:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    environment: dev
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      # see https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development for more info
+      - name: Install the Apple certificate and provisioning profile
+        shell: bash
+        env:
+          IOS_BUILD_CERTIFICATE_BASE64: ${{ secrets.IOS_BUILD_CERTIFICATE_BASE64 }}
+          IOS_BUILD_CERTIFICATE_PASSWORD: ${{ secrets.IOS_BUILD_CERTIFICATE_PASSWORD }}
+          IOS_MOBILE_PROVISIONING_PROFILE_BASE64: ${{ secrets.IOS_MOBILE_PROVISIONING_PROFILE_BASE64 }}
+          IOS_GITHUB_KEYCHAIN_PASSWORD: ${{ secrets.IOS_GITHUB_KEYCHAIN_PASSWORD }}
+          # Slight modification in the script from https://docs.github.com/en/actions/deployment/deploying-xcode-applications/installing-an-apple-certificate-on-macos-runners-for-xcode-development
+          # that adds the uuid to the mobile provision so xcode can find it
+        run: |
+          # create variables
+          CERTIFICATE_PATH=$RUNNER_TEMP/build_certificate.p12
+          KEYCHAIN_PATH=$RUNNER_TEMP/app-signing.keychain-db
+          PP_PATH=$RUNNER_TEMP/temp.mobileprovision
+
+
+          # import certificate and provisioning profile from secrets
+          echo -n "$IOS_BUILD_CERTIFICATE_BASE64" | base64 --decode -o $CERTIFICATE_PATH
+          echo -n "$IOS_MOBILE_PROVISIONING_PROFILE_BASE64" | base64 --decode -o $PP_PATH
+
+          # create temporary keychain
+          security create-keychain -p "$IOS_GITHUB_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+          security set-keychain-settings -lut 21600 $KEYCHAIN_PATH
+          security unlock-keychain -p "$IOS_GITHUB_KEYCHAIN_PASSWORD" $KEYCHAIN_PATH
+
+          # import certificate to keychain
+          security import $CERTIFICATE_PATH -P "$IOS_BUILD_CERTIFICATE_PASSWORD" -A -t cert -f pkcs12 -k $KEYCHAIN_PATH
+          security list-keychain -d user -s $KEYCHAIN_PATH
+          security find-identity -v
+
+          # use uuid for the name of provisioning profile
+          UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i $PP_PATH))
+
+          # apply provisioning profile
+          mkdir -p ~/Library/MobileDevice/Provisioning\ Profiles
+          cp $PP_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
+
+      - name: Flutter, Enable iOS
+        run: |
+          flutter config --enable-ios
+          flutter create .
+
+      - name: Flutter, Build iOS
+        run: |
+          flutter build ios --release --no-codesign
+
+      - name: Identify P12 Certificate Name
+        run: |
+          security find-identity -v -p codesigning
+          export P12_CERTIFICATE_NAME=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1)
+
+      - name: Identify Provisioning Profile UUID
+        run: |
+          export PROVISIOING_PROFILE_UUID=$(/usr/libexec/PlistBuddy -c "Print UUID" /dev/stdin <<< $(/usr/bin/security cms -D -i ~/Library/MobileDevice/Provisioning\ Profiles/*.mobileprovision))
+          echo "PROVISIOING_PROFILE_UUID=$PROVISIOING_PROFILE_UUID"
+
+      - name: Archive iOS
+        env:
+          APPLE_DEVELOPER_TEAM_ID: ${{ secrets.APPLE_DEVELOPER_TEAM_ID }}
+        run: |
+          xcodebuild -workspace ios/Runner.xcworkspace \
+          -scheme Runner \
+          -sdk iphoneos \
+          -configuration Release \
+          -archivePath $PWD/build/Runner.xcarchive \
+          clean archive \
+          CODE_SIGN_STYLE=Manual \
+          PROVISIONING_PROFILE_SPECIFIER="$PROVISIOING_PROFILE_UUID" \
+          DEVELOPMENT_TEAM="$APPLE_DEVELOPER_TEAM_ID" \
+          CODE_SIGN_IDENTITY="$P12_CERTIFICATE_NAME"
+
+      - name: Identify App bundle id
+        run: |
+          export APP_BUNDLE_ID=$(cat ios/Runner.xcodeproj/project.pbxproj | grep -o "PRODUCT_BUNDLE_IDENTIFIER = [^;]*" | head -1 | cut -d ' ' -f 3)
+          echo "APP_BUNDLE_ID=$APP_BUNDLE_ID"
+
+      - name: Build and Export IPA
+        run: |
+          chmod +x ios_build_sign.sh
+          ./ios_build_sign.sh
+
+      - name: Setup upterm session
+        uses: lhotari/action-upterm@v1
