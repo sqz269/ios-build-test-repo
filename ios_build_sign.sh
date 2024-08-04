@@ -10,6 +10,11 @@ if [ -z "$APPLE_DEVELOPER_TEAM_ID" ]; then
     exit 1
 fi
 
+if [ -z "$APPLE_APP_SPECIFIC_PASSWORD" ]; then
+    echo "Please set the APPLE_APP_SPECIFIC_PASSWORD environment variable"
+    exit 1
+fi
+
 # Identify the P12 Cert name from the keychain
 P12_CERTIFICATE_NAME=$(security find-identity -v -p codesigning | grep -o '"[^"]*"' | head -1 | sed 's/"//g')
 echo "P12_CERTIFICATE_NAME: $P12_CERTIFICATE_NAME"
@@ -70,3 +75,7 @@ xcodebuild \
     -exportOptionsPlist ExportOptions.plist
 
 echo "iOS app signed successfully!"
+
+echo "Upoloading the IPA to App Store Connect..."
+# Upload IPA to App Store Connect
+xcrun altool --upload-app -f $PWD/build/Runner.ipa -t ios -u $APPLE_DEVELOPER_TEAM_ID -p @env:APPLE_APP_SPECIFIC_PASSWORD
