@@ -31,6 +31,8 @@ echo "PROVISIOING_PROFILE_UUID: $PROVISIOING_PROFILE_UUID"
 APP_BUNDLE_ID=$(cat ios/Runner.xcodeproj/project.pbxproj | grep -o "PRODUCT_BUNDLE_IDENTIFIER = [^;]*" | head -1 | cut -d ' ' -f 3)
 echo "APP_BUNDLE_ID: $APP_BUNDLE_ID"
 
+xcodebuild -resolvePackageDependencies -workspace ios/Runner.xcworkspace -scheme Runner -configuration Release
+
 echo "Building and signing the iOS app..."
 # archive
 xcodebuild \
