@@ -1,0 +1,33 @@
+name: Add iOS Support and Export Tarball
+
+on:
+  workflow_dispatch:
+
+jobs:
+  prepare-ios-support:
+    runs-on: macos-latest
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: "stable"
+
+      - name: Install Dependencies
+        run: flutter pub get
+
+      - name: Flutter, Enable iOS
+        run: |
+          flutter config --enable-ios
+          flutter create .
+
+      - name: Archive Project
+        run: tar -czf flutter_project.tar.gz .
+
+      - name: Upload Archive as Artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: flutter-ios-project
+          path: flutter_project.tar.gz
