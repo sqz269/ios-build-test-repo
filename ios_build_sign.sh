@@ -10,6 +10,11 @@ if [ -z "$APPLE_DEVELOPER_TEAM_ID" ]; then
     exit 1
 fi
 
+if [ -z "$APPLE_DEVELOPER_EMAIL" ]; then
+    echo "Please set the APPLE_DEVELOPER_EMAIL environment variable"
+    exit 1
+fi
+
 if [ -z "$APP_SPECIFIC_PASSWORD" ]; then
     echo "Please set the APP_SPECIFIC_PASSWORD environment variable"
     exit 1
@@ -78,4 +83,4 @@ echo "iOS app signed successfully!"
 
 echo "Upoloading the IPA to App Store Connect..."
 # Upload IPA to App Store Connect
-xcrun altool --upload-app -f $PWD/build/Runner.ipa -t ios -u $APPLE_DEVELOPER_TEAM_ID -p @env:APP_SPECIFIC_PASSWORD
+xcrun altool --upload-app -f $PWD/build/Runner.ipa -t ios -u $APPLE_DEVELOPER_EMAIL -p @env:APP_SPECIFIC_PASSWORD
